@@ -4,6 +4,8 @@
   "compatibility_date": "2026-08-20",
   "compatibility_flags": ["nodejs_compat"],
 
-  // Pin the SESSION id after the first deploy or the second deploy fails with error 10014.
-  // "kv_namespaces": [{ "binding": "SESSION", "id": "<namespace-id>" }]
+  "vars": { "PUBLIC_GITHUB_REPO": "scale-storm/keystatic-astro-boilerplate" },
+
+  // Pinned after the first deploy. Without this, the next deploy fails with error 10014.
+  "kv_namespaces": [{ "binding": "SESSION", "id": "b006df2a9ab140d29355f9a80183e994" }]
 }
