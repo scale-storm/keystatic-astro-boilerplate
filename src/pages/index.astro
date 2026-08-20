@@ -1,0 +1,15 @@
+---
+import { getCollection } from 'astro:content';
+import { createReader } from '@keystatic/core/reader';
+import keystaticConfig from '../../keystatic.config';
+import HomePage from '../components/HomePage.astro';
+
+const reader = createReader(process.cwd(), keystaticConfig);
+const home = await reader.singletons.home.read();
+const posts = await getCollection('posts');
+---
+
+<HomePage
+  home={home}
+  posts={posts.map(post => ({ slug: post.id, title: post.data.title }))}
+/>

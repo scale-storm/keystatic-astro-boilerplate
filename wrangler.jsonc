@@ -1,0 +1,9 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "keystatic-astro-boilerplate",
+  "compatibility_date": "2026-08-20",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Pin the SESSION id after the first deploy or the second deploy fails with error 10014.
+  // "kv_namespaces": [{ "binding": "SESSION", "id": "<namespace-id>" }]
+}

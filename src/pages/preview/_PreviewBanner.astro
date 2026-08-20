@@ -1,0 +1,30 @@
+---
+interface Props {
+  branch: string;
+}
+
+const { branch } = Astro.props;
+---
+
+<aside class="preview-banner" role="status">
+  Previewing branch <strong>{branch}</strong>
+</aside>
+
+<style>
+  .preview-banner {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 1000;
+    margin: 0;
+    max-width: calc(100vw - 2rem);
+    overflow-wrap: anywhere;
+    border: 1px solid #b45309;
+    border-radius: 0.35rem;
+    padding: 0.5rem 0.75rem;
+    background: #fffbeb;
+    color: #78350f;
+    font: 0.875rem/1.4 system-ui, sans-serif;
+    box-shadow: 0 0.25rem 0.75rem #0003;
+  }
+</style>

@@ -1,0 +1,108 @@
+---
+import type { Config as MarkdocConfig } from '@markdoc/markdoc';
+import { Renderer } from '@astrojs/markdoc/components';
+import { setupConfig } from '@astrojs/markdoc/runtime';
+import HomePage from '../../components/HomePage.astro';
+import PostPage from '../../components/PostPage.astro';
+import Layout from '../../layouts/Layout.astro';
+import keystaticConfig from '../../../keystatic.config';
+import PreviewBanner from './_PreviewBanner.astro';
+import {
+  createPreviewReader,
+  getRuntimePreviewEnv,
+  safeErrorMessage,
+} from './_reader';
+
+export const prerender = false;
+
+const branch = Astro.url.searchParams.get('branch')?.trim() ?? '';
+const path = Astro.params.path;
+const runtimeEnv = await getRuntimePreviewEnv({
+  PUBLIC_GITHUB_REPO: import.meta.env.PUBLIC_GITHUB_REPO,
+  PREVIEW_GITHUB_TOKEN: import.meta.env.PREVIEW_GITHUB_TOKEN,
+});
+
+let status = 200;
+let error = '';
+let home: { heading: string; tagline: string } | null = null;
+let posts: { slug: string; title: string }[] = [];
+let postTitle = '';
+let stringifiedAst = '';
+let markdocConfig: MarkdocConfig | undefined;
+
+if (!branch) {
+  status = 400;
+  error = 'The preview URL is missing its branch query parameter.';
+} else {
+  const [kind, slug, extra] = path?.split('/') ?? [];
+  if (path && (kind !== 'posts' || !slug || extra)) {
+    status = 404;
+    error = `No preview page exists at /preview/${path}.`;
+  } else {
+    try {
+      const reader = createPreviewReader(keystaticConfig, runtimeEnv, branch);
+
+      if (!path) {
+        home = await reader.singletons.home.read();
+        if (!home) {
+          status = 404;
+          error = 'The home singleton does not exist on this branch.';
+        } else {
+          posts = (await reader.collections.posts.all()).map(
+            ({ slug, entry }) => ({
+              slug,
+              title: entry.title,
+            }),
+          );
+        }
+      } else {
+        const post = await reader.collections.posts.read(slug);
+        if (!post) {
+          status = 404;
+          error = `Post “${slug}” does not exist on this branch.`;
+        } else {
+          postTitle = post.title;
+          stringifiedAst = JSON.stringify((await post.content()).node);
+          markdocConfig = (await setupConfig(
+            undefined,
+            undefined,
+          )) as MarkdocConfig;
+        }
+      }
+    } catch (caught) {
+      error = safeErrorMessage(caught, runtimeEnv.PREVIEW_GITHUB_TOKEN);
+      status = error.startsWith('PUBLIC_GITHUB_REPO')
+        ? 500
+        : /\b404\b/.test(error)
+          ? 404
+          : 502;
+    }
+  }
+}
+
+Astro.response.status = status;
+---
+
+{
+  error ? (
+    <Layout title="Preview unavailable">
+      <main>
+        <h1>Preview unavailable</h1>
+        <p>
+          Could not preview branch <strong>{branch || '(missing)'}</strong>.
+        </p>
+        <p>{error}</p>
+      </main>
+      <PreviewBanner branch={branch || '(missing)'} />
+    </Layout>
+  ) : path ? (
+    <PostPage title={postTitle}>
+      <Renderer config={markdocConfig!} stringifiedAst={stringifiedAst} />
+      <PreviewBanner branch={branch} />
+    </PostPage>
+  ) : (
+    <HomePage home={home} posts={posts}>
+      <PreviewBanner branch={branch} />
+    </HomePage>
+  )
+}
